@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    restart: always
+
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: payments
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql   # ✅ persistent storage
+    restart: always
+
+  order_service:
+    build: ./order_service
+    depends_on:
+      - rabbitmq
+    restart: always
+
+  payment_service:
+    build: ./payment_service
+    depends_on:
+      - rabbitmq
+      - mysql
+    restart: always
+
+  nginx:
+    image: nginx
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+    ports:
+      - "8080:80"
+    depends_on:
+      - order_service
+    restart: always
+
+volumes:
+  mysql_data:   # ✅ named volume for persistence

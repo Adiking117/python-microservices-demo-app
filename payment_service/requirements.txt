@@ -1,0 +1,5 @@
+fastapi
+uvicorn
+pika
+mysql-connector-python
+aio-pika

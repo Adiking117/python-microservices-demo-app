@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+pika
+requests
+pybreaker
+aio-pika
