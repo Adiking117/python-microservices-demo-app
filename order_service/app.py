@@ -1,40 +1,62 @@
-from fastapi import FastAPI, Request
-import asyncio
+from fastapi import FastAPI, Request, HTTPException, Depends
 from producer import send_order
 from breaker import rabbitmq_breaker
+# from auth import create_access_token, verify_token
+import asyncio
+# from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
+# security = HTTPBearer()
 app = FastAPI()
 
+# # 🔐 Dummy user
+# fake_user = {
+#     "username": "aditya",
+#     "password": "1234"
+# }
 
-def sync_send(order):
-    """Sync wrapper for circuit breaker"""
-    asyncio.run(send_order(order))
+# # 🔐 LOGIN
+# @app.post("/login")
+# async def login(request: Request):
+#     data = await request.json()
+#     if data["username"] == fake_user["username"] and data["password"] == fake_user["password"]:
+#         token = create_access_token({
+#             "sub": data["username"]
+#         })
+#         return {"access_token": token}
+#     raise HTTPException(status_code=401, detail="Invalid credentials")
+
+
+# def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+#     token = credentials.credentials
+#     payload = verify_token(token)
+#     if payload is None:
+#         raise HTTPException(status_code=401, detail="Invalid token")
+#     return payload
 
 
 @app.post("/create-order")
-async def create_order(request: Request):
-
+async def create_order(
+    request: Request,
+    #user=Depends(get_current_user)  # 🔐 PROTECTED
+):
     order = await request.json()
+
+    def sync_send(o):
+        asyncio.run(send_order(o))
 
     try:
         loop = asyncio.get_event_loop()
-
         await loop.run_in_executor(
             None,
             rabbitmq_breaker.call,
             sync_send,
             order
         )
-
         return {
-            "message": "Order placed successfully",
+            "message": "Order placed",
+            #"user": user,
             "order": order
         }
-
     except Exception as e:
-
-        print("Circuit breaker triggered:", e)
-
-        return {
-            "message": "RabbitMQ unavailable, try later"
-        }
+        print("Circuit breaker:", e)
+        return {"message": "RabbitMQ unavailable"}

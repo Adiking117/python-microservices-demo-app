@@ -17,7 +17,11 @@ services:
     ports:
       - "3307:3306"
     volumes:
-      - mysql_data:/var/lib/mysql   # ✅ persistent storage
+      - mysql_data:/var/lib/mysql
+    restart: always
+
+  auth_service:
+    build: ./auth_service
     restart: always
 
   order_service:
@@ -41,7 +45,8 @@ services:
       - "8080:80"
     depends_on:
       - order_service
+      - auth_service
     restart: always
 
 volumes:
-  mysql_data:   # ✅ named volume for persistence
+  mysql_data:

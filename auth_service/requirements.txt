@@ -1,7 +1,3 @@
 fastapi
 uvicorn
-pika
-requests
-pybreaker
-aio-pika
 python-jose[cryptography]
