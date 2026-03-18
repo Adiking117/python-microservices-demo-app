@@ -1,46 +1,66 @@
-from fastapi import FastAPI, Request, HTTPException, Depends
+from fastapi import FastAPI, Request
+import asyncio
+import threading
+import time
+import httpx
+import py_eureka_client.eureka_client as eureka_client
+
 from producer import send_order
 from breaker import rabbitmq_breaker
-# from auth import create_access_token, verify_token
-import asyncio
-# from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
-# security = HTTPBearer()
 app = FastAPI()
 
-# # 🔐 Dummy user
-# fake_user = {
-#     "username": "aditya",
-#     "password": "1234"
-# }
 
-# # 🔐 LOGIN
-# @app.post("/login")
-# async def login(request: Request):
-#     data = await request.json()
-#     if data["username"] == fake_user["username"] and data["password"] == fake_user["password"]:
-#         token = create_access_token({
-#             "sub": data["username"]
-#         })
-#         return {"access_token": token}
-#     raise HTTPException(status_code=401, detail="Invalid credentials")
+# 🔹 Eureka Registration
+@app.on_event("startup")
+async def register_service():
+
+    def register():
+        while True:
+            try:
+                eureka_client.init(
+                    eureka_server="http://eureka:8761/eureka/",
+                    app_name="order-service",
+                    instance_port=8000,
+                    instance_host="order_service"
+                )
+                print("✅ Order Service registered with Eureka")
+                break
+            except Exception as e:
+                print("❌ Eureka not ready (Order), retrying...", e)
+                time.sleep(5)
+
+    threading.Thread(target=register).start()
 
 
-# def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
-#     token = credentials.credentials
-#     payload = verify_token(token)
-#     if payload is None:
-#         raise HTTPException(status_code=401, detail="Invalid token")
-#     return payload
+# 🔹 Get Payment Service URL from Eureka
+async def get_payment_service_url():
+    try:
+        # Await the coroutine
+        app_obj = await eureka_client.get_application(
+            "http://eureka:8761/eureka/",
+            "PAYMENT-SERVICE"
+        )
+
+        if not app_obj or not app_obj.instances:
+            raise Exception("Payment service not found in Eureka")
+
+        # Pick the first instance (could add load balancing later)
+        instance = app_obj.instances[0]
+        host = instance.ipAddr or instance.hostName
+        port = instance.port.port
+
+        return f"http://{host}:{port}"
+    except Exception as e:
+        raise Exception("Payment service lookup failed") from e
 
 
 @app.post("/create-order")
-async def create_order(
-    request: Request,
-    #user=Depends(get_current_user)  # 🔐 PROTECTED
-):
+async def create_order(request: Request):
+
     order = await request.json()
 
+    # 🔹 Send to RabbitMQ (existing)
     def sync_send(o):
         asyncio.run(send_order(o))
 
@@ -52,11 +72,30 @@ async def create_order(
             sync_send,
             order
         )
-        return {
-            "message": "Order placed",
-            #"user": user,
-            "order": order
-        }
     except Exception as e:
         print("Circuit breaker:", e)
         return {"message": "RabbitMQ unavailable"}
+
+    # 🔥 NEW: Call Payment Service directly
+    try:
+        payment_url = await get_payment_service_url()
+
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"{payment_url}/process-payment",
+                json=order,
+                timeout=5
+            )
+
+        return {
+            "message": "Order placed + Payment triggered",
+            "order": order,
+            "payment_response": response.json()
+        }
+
+    except Exception as e:
+        print("Payment service call failed:", e)
+        return {
+            "message": "Order placed, but payment service unavailable",
+            "order": order
+        }

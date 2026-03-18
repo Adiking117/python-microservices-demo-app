@@ -1,0 +1,5 @@
+Load Balancing + Multiple Instances
+order_service (3 replicas)
+↓
+Eureka picks one
+

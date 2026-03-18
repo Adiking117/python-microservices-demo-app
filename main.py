@@ -1,6 +1,2 @@
-def main():
-    print("Hello from python-microservices!")
-
-
-if __name__ == "__main__":
-    main()
+import py_eureka_client.eureka_client as eureka_client
+print(dir(eureka_client))

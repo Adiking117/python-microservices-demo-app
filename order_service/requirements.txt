@@ -5,3 +5,5 @@ requests
 pybreaker
 aio-pika
 python-jose[cryptography]
+py_eureka_client
+httpx

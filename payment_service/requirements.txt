@@ -3,3 +3,4 @@ uvicorn
 pika
 mysql-connector-python
 aio-pika
+py_eureka_client

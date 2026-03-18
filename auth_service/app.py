@@ -1,11 +1,36 @@
 from fastapi import FastAPI, Request, HTTPException
 from jose import jwt, JWTError
 from datetime import datetime, timedelta
+import threading
+import time
+import py_eureka_client.eureka_client as eureka_client
 
 app = FastAPI()
 
 SECRET_KEY = "mysecretkey"
 ALGORITHM = "HS256"
+
+
+# 🔹 Eureka Registration
+@app.on_event("startup")
+async def register_service():
+
+    def register():
+        while True:
+            try:
+                eureka_client.init(
+                    eureka_server="http://eureka:8761/eureka/",
+                    app_name="auth-service",
+                    instance_port=8002,
+                    instance_host="auth_service"
+                )
+                print("✅ Auth Service registered with Eureka")
+                break
+            except Exception as e:
+                print("❌ Eureka not ready (Auth), retrying...", e)
+                time.sleep(5)
+
+    threading.Thread(target=register).start()
 
 
 # 🔐 LOGIN
@@ -14,7 +39,6 @@ async def login(request: Request):
 
     data = await request.json()
 
-    # dummy user
     if data["username"] == "aditya" and data["password"] == "1234":
 
         payload = {
