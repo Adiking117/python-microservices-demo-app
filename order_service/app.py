@@ -4,12 +4,12 @@ import threading
 import time
 import httpx
 import py_eureka_client.eureka_client as eureka_client
+import socket
 
 from producer import send_order
 from breaker import rabbitmq_breaker
 
 app = FastAPI()
-
 
 # 🔹 Eureka Registration
 @app.on_event("startup")
@@ -22,9 +22,9 @@ async def register_service():
                     eureka_server="http://eureka:8761/eureka/",
                     app_name="order-service",
                     instance_port=8000,
-                    instance_host="order_service"
+                    instance_host=socket.gethostname()  # 👈 unique per replica
                 )
-                print("✅ Order Service registered with Eureka")
+                print(f"✅ Order Service registered with Eureka ({socket.gethostname()})")
                 break
             except Exception as e:
                 print("❌ Eureka not ready (Order), retrying...", e)
@@ -36,7 +36,6 @@ async def register_service():
 # 🔹 Get Payment Service URL from Eureka
 async def get_payment_service_url():
     try:
-        # Await the coroutine
         app_obj = await eureka_client.get_application(
             "http://eureka:8761/eureka/",
             "PAYMENT-SERVICE"
@@ -45,8 +44,9 @@ async def get_payment_service_url():
         if not app_obj or not app_obj.instances:
             raise Exception("Payment service not found in Eureka")
 
-        # Pick the first instance (could add load balancing later)
-        instance = app_obj.instances[0]
+        # Pick a random instance for load balancing
+        import random
+        instance = random.choice(app_obj.instances)
         host = instance.ipAddr or instance.hostName
         port = instance.port.port
 
@@ -60,7 +60,7 @@ async def create_order(request: Request):
 
     order = await request.json()
 
-    # 🔹 Send to RabbitMQ (existing)
+    # 🔹 Send to RabbitMQ
     def sync_send(o):
         asyncio.run(send_order(o))
 
@@ -76,7 +76,7 @@ async def create_order(request: Request):
         print("Circuit breaker:", e)
         return {"message": "RabbitMQ unavailable"}
 
-    # 🔥 NEW: Call Payment Service directly
+    # 🔥 Call Payment Service directly
     try:
         payment_url = await get_payment_service_url()
 
