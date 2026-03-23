@@ -46,7 +46,7 @@ services:
   order_service:
     build: ./order_service
     restart: always
-    scale: 2   # 👈 Run 2 replicas
+    #scale: 2   # 👈 Run 2 replicas
     depends_on:
       rabbitmq:
         condition: service_healthy
@@ -56,7 +56,7 @@ services:
   payment_service:
     build: ./payment_service
     restart: always
-    scale: 2   # 👈 Run 2 replicas
+    #scale: 2   # 👈 Run 2 replicas
     depends_on:
       rabbitmq:
         condition: service_healthy
