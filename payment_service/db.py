@@ -20,6 +20,22 @@ def init_db():
     conn.commit()
     conn.close()
 
+def get_all_orders():
+    conn = mysql.connector.connect(
+        host="mysql",
+        user="root",
+        password="root",
+        database="payments"
+    )
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("SELECT order_id, item, price FROM orders")
+
+    results = cursor.fetchall()
+
+    conn.close()
+
+    return results
 
 def save_payment(order):
     """Insert order into DB, skip duplicates."""

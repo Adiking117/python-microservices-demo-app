@@ -4,10 +4,7 @@
   - Externalize configs (RabbitMQ URL, DB creds) into environment variables or a config service.
   - Teaches you about twelve‑factor app principles.
 
-- Adding rate limiting or request logging in Nginx.  
-- Caching, request validation in NGINX.
 - Implementing refresh tokens in the Auth Service.  
-
 
 ---
 

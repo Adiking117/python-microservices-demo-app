@@ -6,7 +6,7 @@ import py_eureka_client.eureka_client as eureka_client
 import socket
 
 from consumer import consume
-from db import init_db
+from db import init_db,get_all_orders
 
 app = FastAPI()
 
@@ -55,3 +55,20 @@ async def process_payment(order: dict):
         "order_id": order.get("order_id"),
         "instance": socket.gethostname()
     }
+
+@app.get("/orders")
+async def get_orders():
+    try:
+        print(f"Fetching orders from DB ({socket.gethostname()})")
+        orders = get_all_orders()
+
+        return {
+            "count": len(orders),
+            "orders": orders
+        }
+
+    except Exception as e:
+        return {
+            "error": "Failed to fetch orders",
+            "details": str(e)
+        }

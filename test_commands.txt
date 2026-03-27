@@ -1,0 +1,3 @@
+Rate limiting:
+
+for ($i=1; $i -le 10; $i++) { curl -Method POST http://localhost:8080/order -Headers @{Authorization="Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZGl0eWEiLCJleHAiOjE3NzQ2MTc4ODV9.1gosK6u3yr5kjD4BhQN0uNI-GEolYU6Is6MwkA1fCV0";"Content-Type"="application/json"} -Body (@{order_id=$i;item="book";price=100} | ConvertTo-Json) }
