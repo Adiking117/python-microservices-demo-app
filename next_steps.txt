@@ -1,9 +1,9 @@
 🔧 Core Enhancements
 
 - Configuration Management
-  - Externalize configs (RabbitMQ URL, DB creds) into environment variables or a config service.
-  - Teaches you about twelve‑factor app principles.
-
+  Auto Refresh Configuration
+  Secure Secrets
+  
 - Implementing refresh tokens in the Auth Service.  
 
 ---

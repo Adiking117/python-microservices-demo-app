@@ -1,12 +1,13 @@
 import json
 import aio_pika
+from config import CONFIG  # ✅ NEW
 
 
 async def send_order(order):
 
     connection = await aio_pika.connect_robust(
-        "amqp://guest:guest@rabbitmq/"
-    )
+                CONFIG["RABBITMQ_URL"]   # ✅ from config
+            )
 
     async with connection:
 

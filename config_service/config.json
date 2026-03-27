@@ -1,0 +1,19 @@
+{
+  "auth_service": {
+    "SECRET_KEY": "mysecretkey",
+    "ALGORITHM": "HS256",
+    "TOKEN_EXPIRY_MINUTES": 60
+  },
+  "order_service": {
+    "RABBITMQ_URL": "amqp://guest:guest@rabbitmq/",
+    "PAYMENT_SERVICE_NAME": "PAYMENT-SERVICE",
+    "REQUEST_TIMEOUT": 5
+  },
+  "payment_service": {
+    "MYSQL_HOST": "mysql",
+    "MYSQL_USER": "root",
+    "MYSQL_PASSWORD": "root",
+    "MYSQL_DB": "payments",
+    "RABBITMQ_URL": "amqp://guest:guest@rabbitmq/"
+  }
+}

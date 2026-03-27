@@ -5,16 +5,19 @@ import threading
 import time
 import py_eureka_client.eureka_client as eureka_client
 
+from config import load_config, CONFIG  # ✅ NEW
+
 app = FastAPI()
 
-SECRET_KEY = "mysecretkey"
-ALGORITHM = "HS256"
 
-
-# 🔹 Eureka Registration
+# 🔹 Load Config + Eureka Registration
 @app.on_event("startup")
-async def register_service():
+async def startup():
 
+    # ✅ Load config from config service
+    await load_config("auth_service")
+
+    # 🔹 Eureka registration
     def register():
         while True:
             try:
@@ -43,10 +46,16 @@ async def login(request: Request):
 
         payload = {
             "sub": data["username"],
-            "exp": datetime.utcnow() + timedelta(minutes=60)
+            "exp": datetime.utcnow() + timedelta(
+                minutes=CONFIG["TOKEN_EXPIRY_MINUTES"]  # ✅ from config
+            )
         }
 
-        token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+        token = jwt.encode(
+            payload,
+            CONFIG["SECRET_KEY"],   # ✅ from config
+            algorithm=CONFIG["ALGORITHM"]
+        )
 
         return {"access_token": token}
 
@@ -65,7 +74,11 @@ async def validate(request: Request):
     token = auth_header.split(" ")[1]
 
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(
+            token,
+            CONFIG["SECRET_KEY"],   # ✅ from config
+            algorithms=[CONFIG["ALGORITHM"]]
+        )
         return {"user": payload["sub"]}
 
     except JWTError:

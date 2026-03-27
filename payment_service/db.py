@@ -1,18 +1,18 @@
 import mysql.connector
 
-def init_db():
-    """Ensure the orders table exists with unique order_id."""
+def init_db(config):
     conn = mysql.connector.connect(
-        host="mysql",
-        user="root",
-        password="root",
-        database="payments"
+        host=config["MYSQL_HOST"],
+        user=config["MYSQL_USER"],
+        password=config["MYSQL_PASSWORD"],
+        database=config["MYSQL_DB"]
     )
+
     cursor = conn.cursor()
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS orders (
             id INT AUTO_INCREMENT PRIMARY KEY,
-            order_id INT UNIQUE,   -- ✅ unique constraint
+            order_id INT UNIQUE,
             item VARCHAR(100),
             price INT
         )
@@ -20,30 +20,27 @@ def init_db():
     conn.commit()
     conn.close()
 
-def get_all_orders():
+
+def get_all_orders(config):
     conn = mysql.connector.connect(
-        host="mysql",
-        user="root",
-        password="root",
-        database="payments"
+        host=config["MYSQL_HOST"],
+        user=config["MYSQL_USER"],
+        password=config["MYSQL_PASSWORD"],
+        database=config["MYSQL_DB"]
     )
     cursor = conn.cursor(dictionary=True)
-
     cursor.execute("SELECT order_id, item, price FROM orders")
-
     results = cursor.fetchall()
-
     conn.close()
-
     return results
 
-def save_payment(order):
-    """Insert order into DB, skip duplicates."""
+
+def save_payment(order, config):
     conn = mysql.connector.connect(
-        host="mysql",
-        user="root",
-        password="root",
-        database="payments"
+        host=config["MYSQL_HOST"],
+        user=config["MYSQL_USER"],
+        password=config["MYSQL_PASSWORD"],
+        database=config["MYSQL_DB"]
     )
     cursor = conn.cursor()
     try:
@@ -51,6 +48,6 @@ def save_payment(order):
         cursor.execute(query, (order["order_id"], order["item"], order["price"]))
         conn.commit()
     except mysql.connector.Error as e:
-        print("DB insert failed:", e)  # e.g. duplicate order_id
+        print("DB insert failed:", e)
     finally:
         conn.close()
